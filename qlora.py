@@ -588,6 +588,9 @@ def make_data_module(tokenizer: transformers.PreTrainedTokenizer, args) -> Dict:
             return load_dataset("timdettmers/openassistant-guanaco")
         elif dataset_name == 'vicuna':
             raise NotImplementedError("Vicuna data was not released.")
+        elif dataset_name == 'chq' or dataset_name == 'd2n' or dataset_name == 'opi':
+            args.dataset_format = "clin-summ"
+            return load_dataset(f'clin-summ/data/{dataset_name}')
         else:
             if os.path.exists(dataset_name):
                 try:
@@ -623,6 +626,9 @@ def make_data_module(tokenizer: transformers.PreTrainedTokenizer, args) -> Dict:
                 'input': '',
                 'output': x['text'],
             })
+        elif dataset_format == 'clin-summ':
+            for old, new in [["inputs", "input"], ["target", "output"]]:
+                dataset = dataset.rename_column(old, new)
         elif dataset_format == 'input-output':
             # leave as is
             pass
@@ -640,6 +646,8 @@ def make_data_module(tokenizer: transformers.PreTrainedTokenizer, args) -> Dict:
     if args.do_eval or args.do_predict:
         if 'eval' in dataset:
             eval_dataset = dataset['eval']
+        elif 'test' in dataset:
+            eval_dataset = dataset['test']
         else:
             print('Splitting train dataset in train and validation according to `eval_dataset_size`')
             dataset = dataset["train"].train_test_split(
