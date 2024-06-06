@@ -67,7 +67,7 @@ def is_ipex_available():
     return True
     
 
-if torch.cuda.is_available():   
+if torch.cuda.is_available():
     torch.backends.cuda.matmul.allow_tf32 = True
 
 logger = logging.getLogger(__name__)
@@ -534,6 +534,24 @@ def extract_alpaca_dataset(example):
         prompt_format = ALPACA_PROMPT_DICT["prompt_no_input"]
     return {'input': prompt_format.format(**example)}
 
+CLINSUMM_PROMPT_DICT = {
+    "opi" : (
+        "Summarize the radiology report findings into an impression with minimal text.\n\n"
+        "### Report:\n{input}\n\n### Summary:\n"
+    ),
+    "chq": (
+        "Summarize the patient health query into one question of 15 words or less.\n\n"
+        "### Query:\n{input}\n\n### Summary:\n"
+    ),
+    "d2n": (
+        "Summarize the patient/doctor dialogue into an assessment and plan.\n\n"
+        "### Dialogue:\n{input}\n\n### Summary:\n"
+    ),
+}
+
+def extract_clinsumm_dataset(example, dataset_name):
+    return {'input': CLINSUMM_PROMPT_DICT[dataset_name].format(**example)}
+
 def local_dataset(dataset_name):
     if dataset_name.endswith('.json') or dataset_name.endswith('.jsonl'):
         full_dataset = Dataset.from_json(path_or_paths=dataset_name)
@@ -589,8 +607,8 @@ def make_data_module(tokenizer: transformers.PreTrainedTokenizer, args) -> Dict:
         elif dataset_name == 'vicuna':
             raise NotImplementedError("Vicuna data was not released.")
         elif dataset_name == 'chq' or dataset_name == 'd2n' or dataset_name == 'opi':
-            args.dataset_format = "clin-summ"
-            return load_dataset(f'clin-summ/data/{dataset_name}')
+            args.dataset_format = 'clin-summ'
+            return load_dataset(f"clin-summ/data/{dataset_name}")
         else:
             if os.path.exists(dataset_name):
                 try:
@@ -629,6 +647,7 @@ def make_data_module(tokenizer: transformers.PreTrainedTokenizer, args) -> Dict:
         elif dataset_format == 'clin-summ':
             for old, new in [["inputs", "input"], ["target", "output"]]:
                 dataset = dataset.rename_column(old, new)
+            dataset = dataset.map(extract_clinsumm_dataset, fn_kwargs={"dataset_name": args.dataset})
         elif dataset_format == 'input-output':
             # leave as is
             pass
