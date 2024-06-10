@@ -43,6 +43,12 @@ from peft import (
 from peft.tuners.lora import LoraLayer
 from transformers.trainer_utils import PREFIX_CHECKPOINT_DIR
 
+import wandb
+
+wandb.init(
+    project='cs224n-course-project',
+)
+
 
 def is_ipex_available():
     def get_major_and_minor_from_version(full_version):
