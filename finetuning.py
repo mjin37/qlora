@@ -52,6 +52,7 @@ ALPACA_PROMPT_DICT = {
 }
 
 # Tokenize the dataset
+# TODO: figure out what "tokenization" is doing
 def tokenize_alpaca_dataset(example):
     if example.get("input", "") != "":
         prompt_format = ALPACA_PROMPT_DICT["prompt_input"]
@@ -82,6 +83,7 @@ train_dataset = train_dataset.select(range(100))
 data_collator = DataCollatorWithPadding(tokenizer)
 
 # Configure LoRA
+# TODO: find out what LoRA configs work best
 lora_config = LoraConfig(
     r=32,                   # lower to reduce vRAM consumption
     lora_alpha=32,          # generally matches r
@@ -96,6 +98,7 @@ print(sum([x.numel() for x in model.parameters() if x.requires_grad]))
 model = model.to("cuda")
 
 # Training arguments with reduced batch size and gradient accumulation
+# TODO: fiddle with the training parameters
 training_args = TrainingArguments(
     output_dir="./output",
     evaluation_strategy="steps",
@@ -120,11 +123,13 @@ trainer = Trainer(
     args=training_args,
     train_dataset=train_dataset,
     eval_dataset=train_dataset, # TODO: do a train/test split on the Alpaca
-                                #       dataset for actual metrics
+                                #       dataset for actual metrics (instead
+                                #       of just using the train set again)
     tokenizer=tokenizer,
     data_collator=data_collator
 )
 
 # Train the model
 trainer.train()
+# TODO: Prompt the saved model with run.py
 trainer.save_model("alpaca-model")
